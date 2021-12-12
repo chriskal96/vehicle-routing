@@ -13,6 +13,11 @@ class Model:
         self.duration = -1
 
     def BuildModel(self):
+
+
+        self.duration = 150
+        totalCustomers = 120
+
         d = Node(0, 50, 50, 0, 0)
         self.allNodes.append(d)
         birthday = 3051996

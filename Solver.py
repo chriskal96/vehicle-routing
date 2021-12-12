@@ -20,7 +20,8 @@ class CustomerInsertionAllPositions(object):
         self.customer = None
         self.route = None
         self.insertionPosition = None
-        self.rt_duration = 10 ** 8
+        self.rt_time = 10 ** 8
+        # self.rt_duration = 10 ** 8
         self.rt_profit = 0
 
 
@@ -92,7 +93,7 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 for rt in self.sol.routes:
-                    if rt.rt_time + candidateCust.service_time <= 150:
+                    if rt.rt_time + candidateCust.service_time <= rt.duration:
                         for j in range(0, len(rt.sequenceOfNodes) - 1):
                             A = rt.sequenceOfNodes[j]
                             B = rt.sequenceOfNodes[j + 1]
@@ -101,11 +102,13 @@ class Solver:
                             trialCost = costAdded - costRemoved
 
 
-                            if trialCost < best_insertion.rt_duration:
+                            if trialCost < best_insertion.rt_time and trialCost + rt.rt_time <=150:
                                 best_insertion.customer = candidateCust
                                 best_insertion.route = rt
                                 best_insertion.insertionPosition = j
-                                best_insertion.rt_duration = trialCost
+                                # best_insertion.rt_duration = trialCost
+                                best_insertion.rt_time = trialCost
+
                                 best_insertion.rt_profit = candidateCust.profit
                     else:
                         continue
@@ -115,7 +118,7 @@ class Solver:
             rt = sol.routes[i]
             for j in range(0, len(rt.sequenceOfNodes)):
                 print(rt.sequenceOfNodes[j].ID, end=' ')
-            print(rt.duration)
+            print ('\n Duration : ', rt.rt_time)
         SolDrawer.draw('MinIns', self.sol, self.allNodes)
         print(self.sol.rt_duration)
 
@@ -158,15 +161,15 @@ class Solver:
                 B = rt.sequenceOfNodes[n + 1]
                 rtCost += self.timeMatrix[A.ID][B.ID]
                 rtLoad += A.service_time
-            if abs(rtCost - rt.duration) > 0.0001:
-                print('Route Cost problem')
-            if rtLoad != rt.rt_time:
-                print('Route Load problem')
+            # if abs(rtCost - rt.duration) > 0.0001:
+            #     print('Route Cost problem')
+            # if rtLoad != rt.rt_time:
+            #     print('Route Load problem')
 
             totalSolCost += rt.duration
 
-        if abs(totalSolCost - self.sol.rt_duration) > 0.0001:
-            print('Solution Cost problem')
+        # if abs(totalSolCost - self.sol.rt_duration) > 0.0001:
+        #     print('Solution Cost problem')
 
     def IdentifyBestInsertionAllPositions(self, best_insertion, rt):
         for i in range(0, len(self.customers)):
@@ -192,8 +195,10 @@ class Solver:
         rt = insertion.route
         insIndex = insertion.insertionPosition
         rt.sequenceOfNodes.insert(insIndex + 1, insCustomer)
-        rt.rt_time += insertion.rt_duration
-        self.sol.rt_duration += insertion.rt_duration
+        # rt.rt_time += insertion.rt_duration
+        rt.rt_time += insertion.rt_time
+        # self.sol.rt_duration += insertion.rt_duration
+        self.sol.rt_duration += insertion.rt_time
         rt.rt_profit += insCustomer.profit
         insCustomer.isRouted = True
 
