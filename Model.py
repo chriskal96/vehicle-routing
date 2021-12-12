@@ -24,6 +24,7 @@ class Model:
             profit = random.randint(5, 20)
             cust = Node(i + 1, xx, yy, service_time, profit)
             self.allNodes.append(cust)
+            self.customers.append(cust)
 
         rows = len(self.allNodes)
         self.time_matrix = [[0.0 for x in range(rows)] for y in range(rows)]
