@@ -8,13 +8,6 @@ class Solution:
         self.routes = []
 
 
-# class CustomerInsertion(object):
-#     def __init__(self):
-#         self.customer = None
-#         self.route = None
-#         self.rt_duration = 10 ** 8
-
-
 class CustomerInsertionAllPositions(object):
     def __init__(self):
         self.customer = None
@@ -161,15 +154,9 @@ class Solver:
                 B = rt.sequenceOfNodes[n + 1]
                 rtCost += self.timeMatrix[A.ID][B.ID]
                 rtLoad += A.service_time
-            # if abs(rtCost - rt.duration) > 0.0001:
-            #     print('Route Cost problem')
-            # if rtLoad != rt.rt_time:
-            #     print('Route Load problem')
 
             totalSolCost += rt.duration
 
-        # if abs(totalSolCost - self.sol.rt_duration) > 0.0001:
-        #     print('Solution Cost problem')
 
     def IdentifyBestInsertionAllPositions(self, best_insertion, rt):
         for i in range(0, len(self.customers)):
