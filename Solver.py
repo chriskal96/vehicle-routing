@@ -58,8 +58,6 @@ class CustomerInsertionAllPositions(object):
         # self.rt_duration = 10 ** 8
         self.rt_profit = 0
 
-
-
 class Solver:
     def __init__(self, m):
         self.allNodes = m.allNodes
@@ -69,7 +67,7 @@ class Solver:
         self.duration = m.duration
         self.sol = None
         #self.searchTrajectory = []
-        # self.bestSolution = None
+        self.bestSolution = None
 
     def solve(self):
         self.SetRoutedFlagToFalseForAllCustomers()
@@ -96,7 +94,6 @@ class Solver:
                 return x.profit / x.service_time
 
         self.allNodes = sorted(self.allNodes, key=pr_per_time)
-
 
         while insertions < len(self.customers):
             best_insertion = CustomerInsertionAllPositions()
