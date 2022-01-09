@@ -11,7 +11,7 @@ class SolDrawer:
         plt.clf()
         SolDrawer.drawPoints(nodes)
         SolDrawer.drawRoutes(sol)
-        plt.savefig(str(itr))
+        plt.savefig('images/'+str(itr))
 
     @staticmethod
     def drawPoints(nodes: list):
