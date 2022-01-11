@@ -74,7 +74,7 @@ class Solver:
         self.SetRoutedFlagToFalseForAllCustomers()
         self.MinimumInsertions()
         self.ReportSolution(self.sol)
-        self.LocalSearch(0)
+        self.LocalSearch(1)
         self.ReportSolution(self.sol)
         return self.sol
 
@@ -215,7 +215,7 @@ class Solver:
             if operator == 0:
                 self.FindBestRelocationMove(rm)
                 if rm.originRoutePosition is not None:
-                    if rm.moveCost < 0 :
+                    if rm.moveCost < 0:
                        self.ApplyRelocationMove(rm)
                     else:
                         #self.iterations = localSearchIterator
@@ -351,45 +351,94 @@ class Solver:
                 c += self.timeMatrix[a.ID][b.ID] + b.service_time
         return c
 
+
     def FindBestSwapMove(self, sm):
-        print("here 1:",len(self.sol.routes) - 1)
-        for firstIndex in range(1, len(self.sol.routes) - 1):
-            rt1: Route = self.sol.routes[firstIndex]
-            A = rt1.sequenceOfNodes[firstIndex - 1]
-            B = rt1.sequenceOfNodes[firstIndex]
-            C = rt1.sequenceOfNodes[firstIndex + 1]
+        for firstRouteIndex in range(0, len(self.sol.routes)):
+            rt1: Route = self.sol.routes[firstRouteIndex]
+            for secondRouteIndex in range(firstRouteIndex, len(self.sol.routes)):
+                rt2: Route = self.sol.routes[secondRouteIndex]
+                for firstNodeIndex in range(1, len(rt1.sequenceOfNodes) - 1):
+                    startOfSecondNodeIndex = 1
+                    if rt1 == rt2:
+                        startOfSecondNodeIndex = firstNodeIndex + 1
+                    for secondNodeIndex in range(startOfSecondNodeIndex, len(rt2.sequenceOfNodes) - 1):
 
-            for secondIndex in range(firstIndex + 1, len(self.sol.routes) - 1):
-                rt2: Route = self.sol.routes[secondIndex]
-                E = rt2.sequenceOfNodes[secondIndex]
-                F = rt2.sequenceOfNodes[secondIndex + 1]
-                D = rt2.sequenceOfNodes[secondIndex - 1]
+                        a1 = rt1.sequenceOfNodes[firstNodeIndex - 1]
+                        b1 = rt1.sequenceOfNodes[firstNodeIndex]
+                        c1 = rt1.sequenceOfNodes[firstNodeIndex + 1]
 
-                if (secondIndex == firstIndex + 1):
-                    costRemoved = self.timeMatrix[A.ID][B.ID] + self.timeMatrix[B.ID][C.ID] + \
-                                  self.timeMatrix[C.ID][F.ID]
-                    costAdded = self.timeMatrix[A.ID][C.ID] + self.timeMatrix[C.ID][B.ID] + \
-                                self.timeMatrix[B.ID][F.ID]
-                else:
-                    costRemoved1 = self.timeMatrix[A.ID][B.ID] + self.timeMatrix[B.ID][C.ID]
-                    costAdded1 = self.timeMatrix[A.ID][E.ID] + self.timeMatrix[E.ID][C.ID]
-                    costRemoved2 = self.timeMatrix[D.ID][E.ID] + self.timeMatrix[E.ID][F.ID]
-                    costAdded2 = self.timeMatrix[D.ID][B.ID] + self.timeMatrix[B.ID][F.ID]
-                    costAdded = costAdded1 + costAdded2
-                    costRemoved = costRemoved1 + costRemoved2
+                        a2 = rt2.sequenceOfNodes[secondNodeIndex - 1]
+                        b2 = rt2.sequenceOfNodes[secondNodeIndex]
+                        c2 = rt2.sequenceOfNodes[secondNodeIndex + 1]
 
-                moveCost = costAdded - costRemoved - (10**6)*(rt2.rt_profit - rt1.rt_profit)
-                print(moveCost)
-                if moveCost < sm.moveCost:
-                    sm.moveCost = moveCost
-                    sm.positionOfFirst = firstIndex
-                    sm.positionOfSecond = secondIndex
+                        moveCost = None
+                        costChangeFirstRoute = None
+                        costChangeSecondRoute = None
 
+                        if rt1 == rt2:
+                            if firstNodeIndex == secondNodeIndex - 1:
+                                costRemoved = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][b2.ID] + \
+                                              self.timeMatrix[b2.ID][c2.ID]
+                                costAdded = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][b1.ID] + \
+                                            self.timeMatrix[b1.ID][c2.ID]
+                                moveCost = costAdded - costRemoved
+                            else:
+
+                                costRemoved1 = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][c1.ID]
+                                costAdded1 = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][c1.ID]
+                                costRemoved2 = self.timeMatrix[a2.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
+                                costAdded2 = self.timeMatrix[a2.ID][b1.ID] + self.timeMatrix[b1.ID][c2.ID]
+                                moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2)
+                        else:
+                            if rt1.rt_time - b1.service_time + b2.service_time > 150:
+                                continue
+                            if rt2.rt_time - b2.service_time + b1.service_time > 150:
+                                continue
+
+                            costRemoved1 = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][c1.ID]
+                            costAdded1 = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][c1.ID]
+                            costRemoved2 = self.timeMatrix[a2.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
+                            costAdded2 = self.timeMatrix[a2.ID][b1.ID] + self.timeMatrix[b1.ID][c2.ID]
+
+                            costChangeFirstRoute = costAdded1 - costRemoved1
+                            costChangeSecondRoute = costAdded2 - costRemoved2
+
+                            moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2)
+
+                        if moveCost < sm.moveCost:
+                            self.StoreBestSwapMove(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
+                                                   moveCost, costChangeFirstRoute, costChangeSecondRoute, sm)
 
     def ApplySwapMove(self, sm):
-        firstNode = self.sol.routes[sm.positionOfFirst]
-        secondNode = self.sol.routes[sm.positionOfSecond]
-        self.sol.routes[sm.positionOfFirst] = secondNode
-        self.sol.routes[sm.positionOfSecond] = firstNode
+        oldCost = self.CalculateTotalDuration(self.sol)
+        rt1 = self.sol.routes[sm.positionOfFirstRoute]
+        rt2 = self.sol.routes[sm.positionOfSecondRoute]
+        b1 = rt1.sequenceOfNodes[sm.positionOfFirstNode]
+        b2 = rt2.sequenceOfNodes[sm.positionOfSecondNode]
+        rt1.sequenceOfNodes[sm.positionOfFirstNode] = b2
+        rt2.sequenceOfNodes[sm.positionOfSecondNode] = b1
 
-        self.sol.rt_duration = self.sol.rt_duration + sm.moveCost
+        if (rt1 == rt2):
+            rt1.rt_time += sm.moveCost
+        else:
+            rt1.rt_time += sm.costChangeFirstRt
+            rt2.rt_time += sm.costChangeSecondRt
+            # rt1.load = rt1.load - b1.demand + b2.demand
+            # rt2.load = rt2.load + b1.demand - b2.demand
+
+        self.sol.rt_duration = self.CalculateTotalDuration(self.sol)
+
+        newCost = self.CalculateTotalDuration(self.sol)
+        # debuggingOnly
+        if abs((newCost - oldCost) - sm.moveCost) > 0.0001:
+            print('Cost Issue')
+
+    def StoreBestSwapMove(self, firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex, moveCost,
+                          costChangeFirstRoute, costChangeSecondRoute, sm):
+        sm.positionOfFirstRoute = firstRouteIndex
+        sm.positionOfSecondRoute = secondRouteIndex
+        sm.positionOfFirstNode = firstNodeIndex
+        sm.positionOfSecondNode = secondNodeIndex
+        sm.costChangeFirstRt = costChangeFirstRoute
+        sm.costChangeSecondRt = costChangeSecondRoute
+        sm.moveCost = moveCost

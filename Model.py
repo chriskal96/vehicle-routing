@@ -16,13 +16,13 @@ class Model:
 
 
         self.duration = 150
-        totalCustomers = 120
+        totalCustomers = 4
 
         d = Node(0, 50, 50, 0, 0)
         self.allNodes.append(d)
         birthday = 3051996
         random.seed(birthday)
-        for i in range(0, 300):
+        for i in range(0, totalCustomers):
             xx = random.randint(0, 100)
             yy = random.randint(0, 100)
             service_time = random.randint(5, 10)
@@ -53,6 +53,8 @@ class Model:
         for i in range(0, len(self.allNodes)):
             for j in range(0, len(self.allNodes)):
                 print('from ', i, 'to ', j, ' time : ', self.time_matrix[i][j])
+                print(i, 'profit = ', self.allNodes[i].profit, 'and service time = ',self.allNodes[i].service_time)
+                print(j, 'profit = ', self.allNodes[j].profit, 'and service time = ',self.allNodes[j].service_time)
 
 
 
@@ -64,6 +66,7 @@ class Node:
         self.service_time = st
         self.profit = p
         self.isRouted = False
+        self.pr_per_time = p/st if st > 0 else 0
 
 class Route:
     def __init__(self, dp, dur):
