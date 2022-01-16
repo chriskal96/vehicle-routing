@@ -1,4 +1,4 @@
-from model import *
+from Model import *
 from SolutionDrawer import *
 
 class Solution:
@@ -35,6 +35,8 @@ class SwapMove(object):
         self.costChangeFirstRt = None
         self.costChangeSecondRt = None
         self.moveCost = 10 ** 9
+        self.movecost1 = 0
+        self.movecost2 = 0
     def Initialize(self):
         self.positionOfFirstRoute = None
         self.positionOfSecondRoute = None
@@ -43,6 +45,8 @@ class SwapMove(object):
         self.costChangeFirstRt = None
         self.costChangeSecondRt = None
         self.moveCost = 10 ** 9
+        self.movecost1 = 0
+        self.movecost2 = 0
 
 class InsertionMove(object):
     def __init__(self):
@@ -112,7 +116,7 @@ class Solver:
         self.MinimumInsertions()
         self.ReportSolution(self.sol)
         SolDrawer.draw('MinIns', self.sol, self.allNodes)
-        #self.LocalSearch(3)
+        # self.LocalSearch(1)
         self.VND()
         self.ReportSolution(self.sol)
         return self.sol
@@ -432,17 +436,17 @@ class Solver:
                         b2 = rt2.sequenceOfNodes[secondNodeIndex]
                         c2 = rt2.sequenceOfNodes[secondNodeIndex + 1]
 
-                        moveCost = None
+
                         costChangeFirstRoute = None
                         costChangeSecondRoute = None
 
                         if rt1 == rt2:
                             if firstNodeIndex == secondNodeIndex - 1:
-                                costRemoved = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][b2.ID] + \
-                                              self.timeMatrix[b2.ID][c2.ID]
-                                costAdded = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][b1.ID] + \
-                                            self.timeMatrix[b1.ID][c2.ID]
+                                costRemoved = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
+                                costAdded = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][b1.ID] + self.timeMatrix[b1.ID][c2.ID]
                                 moveCost = costAdded - costRemoved
+                                movecost1 = moveCost
+                                movecost2 = moveCost
                             else:
 
                                 costRemoved1 = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][c1.ID]
@@ -450,23 +454,28 @@ class Solver:
                                 costRemoved2 = self.timeMatrix[a2.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
                                 costAdded2 = self.timeMatrix[a2.ID][b1.ID] + self.timeMatrix[b1.ID][c2.ID]
                                 moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2)
+                                movecost1 = moveCost
+                                movecost2 = moveCost
                         else:
-                            if rt1.rt_time - b1.service_time + b2.service_time > 150:
-                                continue
-                            if rt2.rt_time - b2.service_time + b1.service_time > 150:
-                                continue
+                            # if rt1.rt_time - b1.service_time + b2.service_time > 150:
+                            #     continue
+                            # if rt2.rt_time - b2.service_time + b1.service_time > 150:
+                            #     continue
 
                             costRemoved1 = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][c1.ID]
                             costAdded1 = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][c1.ID]
                             costRemoved2 = self.timeMatrix[a2.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
                             costAdded2 = self.timeMatrix[a2.ID][b1.ID] + self.timeMatrix[b1.ID][c2.ID]
 
-                            costChangeFirstRoute = costAdded1 - costRemoved1
-                            costChangeSecondRoute = costAdded2 - costRemoved2
+                            costChangeFirstRoute = costAdded1 - costRemoved1 - b1.service_time + b2.service_time
+                            costChangeSecondRoute = costAdded2 - costRemoved2 - b2.service_time + b1.service_time
 
-                            moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2)
+                            movecost =  costAdded1 - costRemoved1 - b1.service_time + b2.service_time + costAdded2 - costRemoved2 - b2.service_time + b1.service_time
+                            movecost1 = costAdded1 - costRemoved1 - b1.service_time + b2.service_time
+                            movecost2 = costAdded2 - costRemoved2 - b2.service_time + b1.service_time
 
-                        if moveCost < sm.moveCost and moveCost + rt1.rt_time <= 150:
+
+                        if moveCost < sm.moveCost and movecost1 + rt1.rt_time <= 150 and movecost2 + rt2.rt_time <= 150:
                             self.StoreBestSwapMove(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex, moveCost, costChangeFirstRoute, costChangeSecondRoute, sm)
 
     def ApplySwapMove(self, sm):
@@ -561,13 +570,12 @@ class Solver:
 
         originRt = self.sol.routes[ins.originRoutePosition]
 
+        A = originRt.sequenceOfNodes[ins.originNodePosition - 1]
         B = originRt.sequenceOfNodes[ins.originNodePosition]
         C = ins.uncovered[ins.targetNodePosition]
-        # del originRt.sequenceOfNodes[ins.originNodePosition]
-        if ins.originNodePosition < ins.targetNodePosition:
-            originRt.sequenceOfNodes.insert(ins.targetNodePosition, C)
-        else:
-            originRt.sequenceOfNodes.insert(ins.targetNodePosition + 1, C)
+
+        originRt.sequenceOfNodes.insert(ins.originNodePosition, C)
+
 
         originRt.rt_time += ins.moveCost
         originRt.rt_profit += C.profit
@@ -643,10 +651,11 @@ class Solver:
             self.InitializeOperators(sm)
             self.InitializeOperators(ins)
             self.InitializeOperators(usm)
-            if k == 3:
-                # print("Doing Relocation")
+            if k == 1:
+
                 self.FindBestRelocationMove(rm)
                 if rm.originRoutePosition is not None and rm.moveCost < 0:
+                    print("Doing Relocation")
                     self.ApplyRelocationMove(rm)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -655,10 +664,11 @@ class Solver:
                     k = 0
                 else:
                     k += 1
-            elif k == 2:
-                # print("Doing Swap")
+            elif k == 0:
+
                 self.FindBestSwapMove(sm)
                 if sm.positionOfFirstRoute is not None and sm.moveCost < 0:
+                    print("Doing Swap")
                     self.ApplySwapMove(sm)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -667,10 +677,11 @@ class Solver:
                     k = 0
                 else:
                     k += 1
-            elif k == 0:
-                # print("Doing Insertion")
+            elif k == 3:
+
                 self.FindBestInsertionMove(ins)
                 if ins.originRoutePosition is not None:
+                    print("Doing Insertion")
                     self.ApplyInsertionMove(ins)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -679,10 +690,11 @@ class Solver:
                     k = 0
                 else:
                     k += 1
-            elif k == 1:
-                # print("Doing Uncovered Swap")
+            elif k == 2:
+
                 self.FindBestUncoveredSwapMove(usm)
                 if usm.positionOfFirstRoute is not None:
+                    print("Doing Uncovered Swap")
                     self.ApplyUncoveredSwapMove(usm)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -692,16 +704,10 @@ class Solver:
                 else:
                     k += 1
 
-            if (self.sol.rt_profit < self.bestSolution.profit or self.sol.rt_duration < self.bestSolution.duration):
-                if k == 0:
-                    print("Did Insertion")
-                elif k == 2:
-                    print("Did Swap")
-                elif k == 3:
-                    print("Did Relocation")
-                elif k == 1:
-                    print("Did Uncovered Swap")
-                self.bestSolution = self.cloneSolution(self.sol)
+            # if (self.sol.rt_profit < self.bestSolution.profit or self.sol.rt_duration < self.bestSolution.duration):
+            print("Solution",VNDIterator)
+            self.ReportSolution(self.sol)
+            self.bestSolution = self.cloneSolution(self.sol)
 
         SolDrawer.draw('final_vnd', self.bestSolution, self.allNodes)
         SolDrawer.drawTrajectory(self.searchTrajectory)
