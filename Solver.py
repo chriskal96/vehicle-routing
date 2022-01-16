@@ -98,8 +98,6 @@ class CustomerInsertionAllPositions(object):
 
 
 
-
-
 class Solver:
     def __init__(self, m):
         self.allNodes = m.allNodes
@@ -108,7 +106,7 @@ class Solver:
         self.timeMatrix = m.time_matrix
         self.duration = m.duration
         self.sol = None
-        #self.searchTrajectory = []
+        self.searchTrajectory = []
         self.bestSolution = None
 
     def solve(self):
@@ -116,7 +114,8 @@ class Solver:
         self.MinimumInsertions()
         self.ReportSolution(self.sol)
         SolDrawer.draw('MinIns', self.sol, self.allNodes)
-        self.LocalSearch(1)
+        # self.LocalSearch(1)
+        self.VND()
         self.ReportSolution(self.sol)
         return self.sol
 
@@ -632,3 +631,82 @@ class Solver:
         usm.costChangeFirstRt = moveCost
         usm.moveCost = moveCost
         usm.profit = newprofit
+
+    def VND(self):
+        self.bestSolution = self.cloneSolution(self.sol)
+        VNDIterator = 0
+        kmax = 2
+        rm = RelocationMove()
+        sm = SwapMove()
+        ins = InsertionMove()
+        usm = UncoveredSwap()
+        k = 0
+        draw = True
+
+        while k <= kmax:
+            self.InitializeOperators(rm)
+            self.InitializeOperators(sm)
+            self.InitializeOperators(ins)
+            self.InitializeOperators(usm)
+            if k == 2:
+                # print("Doing Relocation")
+                self.FindBestRelocationMove(rm)
+                if rm.originRoutePosition is not None and rm.moveCost < 0:
+                    self.ApplyRelocationMove(rm)
+                    if draw:
+                        SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
+                    VNDIterator = VNDIterator + 1
+                    self.searchTrajectory.append(self.sol.rt_duration)
+                    k = 0
+                else:
+                    k += 1
+            elif k == 1:
+                # print("Doing Swap")
+                self.FindBestSwapMove(sm)
+                if sm.positionOfFirstRoute is not None and sm.moveCost < 0:
+                    self.ApplySwapMove(sm)
+                    if draw:
+                        SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
+                    VNDIterator = VNDIterator + 1
+                    self.searchTrajectory.append(self.sol.rt_duration)
+                    k = 0
+                else:
+                    k += 1
+            elif k == 0:
+                # print("Doing Insertion")
+                self.FindBestInsertionMove(ins)
+                if ins.originRoutePosition is not None and ins.moveCost < 0:
+                    self.ApplyInsertionMove(ins)
+                    if draw:
+                        SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
+                    VNDIterator = VNDIterator + 1
+                    self.searchTrajectory.append(self.sol.rt_duration)
+                    k = 0
+                else:
+                    k += 1
+            elif k == 3:
+                # print("Doing Uncovered Swap")
+                self.FindBestUncoveredSwapMove(usm)
+                if usm.positionOfFirstRoute is not None and usm.moveCost < 0:
+                    self.ApplyUncoveredSwapMove(usm)
+                    if draw:
+                        SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
+                    VNDIterator = VNDIterator + 1
+                    self.searchTrajectory.append(self.sol.rt_duration)
+                    k = 0
+                else:
+                    k += 1
+
+            if (self.sol.rt_duration < self.bestSolution.duration):
+                if k == 0:
+                    print("Did Insertion")
+                elif k == 1:
+                    print("Did Swap")
+                elif k == 2:
+                    print("Did Relocation")
+                elif k == 3:
+                    print("Did Uncovered Swap")
+                self.bestSolution = self.cloneSolution(self.sol)
+
+        SolDrawer.draw('final_vnd', self.bestSolution, self.allNodes)
+        SolDrawer.drawTrajectory(self.searchTrajectory)

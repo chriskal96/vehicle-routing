@@ -41,4 +41,4 @@ class SolDrawer:
         plt.title('Search Trajectory')
         plt.xlabel('Iterations')
         plt.ylabel('Objective Function')
-        plt.savefig(str("SearchTrajectory"))
+        plt.savefig('images/'+str("SearchTrajectory"))
