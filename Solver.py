@@ -37,6 +37,7 @@ class SwapMove(object):
         self.moveCost = 10 ** 9
         self.movecost1 = 0
         self.movecost2 = 0
+
     def Initialize(self):
         self.positionOfFirstRoute = None
         self.positionOfSecondRoute = None
@@ -74,6 +75,7 @@ class UncoveredSwap(object):
         self.moveCost = 10 ** 9
         self.profit = 0
         self.uncoveredNodes = []
+
     def Initialize(self):
         self.positionOfFirstRoute = None
         self.positionOfSecondRoute = None
@@ -97,7 +99,6 @@ class CustomerInsertionAllPositions(object):
         self.route = None
         self.insertionPosition = None
         self.rt_time = 10 ** 8
-        # self.rt_duration = 10 ** 8
         self.rt_profit = 0
 
 class Solver:
@@ -116,8 +117,8 @@ class Solver:
         self.MinimumInsertions()
         self.ReportSolution(self.sol)
         SolDrawer.draw('MinIns', self.sol, self.allNodes)
-        # self.LocalSearch(1)
-        self.VND()
+        self.LocalSearch(1)
+        #self.VND()
         self.ReportSolution(self.sol)
         return self.sol
 
@@ -142,8 +143,6 @@ class Solver:
                 self.ApplyCustomerInsertionAllPositions(best_insertion)
                 insertions += 1
             else:
-               print("Insertion : ", insertions)
-               print('FeasibilityIssue')
                model_is_feasible = False
                break
 
@@ -177,63 +176,41 @@ class Solver:
                                 best_insertion.customer = candidateCust
                                 best_insertion.route = rt
                                 best_insertion.insertionPosition = j
-                                # best_insertion.rt_duration = trialCost
                                 best_insertion.rt_time = trialCost + candidateCust.service_time
-
                                 best_insertion.rt_profit = candidateCust.profit
                     else:
                         continue
 
-    # def ReportSolution(self, sol):
-    #     for i in range(0, len(sol.routes)):
-    #         rt = sol.routes[i]
-    #         for j in range(0, len(rt.sequenceOfNodes)):
-    #             print(rt.sequenceOfNodes[j].ID, end=' ')
-    #         print('\n Duration : ', rt.rt_time)
-    #         print(' Profit : ', rt.rt_profit)
-    #     SolDrawer.draw('MinIns', self.sol, self.allNodes)
-    #     print('\n Total Duration MinIns :', self.sol.rt_duration)
-    #     print('Total Profit MinIns:', self.sol.rt_profit)
-
     def ReportSolution(self, sol):
         for i in range(0, len(sol.routes)):
             rt = sol.routes[i]
-            for j in range (0, len(rt.sequenceOfNodes)):
+            for j in range(0, len(rt.sequenceOfNodes)):
                 print(rt.sequenceOfNodes[j].ID, end=' ')
             print(rt.rt_time)
-        # SolDrawer.draw('MinIns', self.sol, self.allNodes)
-        print (self.sol.rt_duration)
+        print(self.sol.rt_duration)
         print(self.sol.rt_profit)
 
     def TestSolution(self):
-        totalSolCost = 0
         for r in range(0, len(self.sol.routes)):
             rt: Route = self.sol.routes[r]
-            rtCost = 0
-            rtLoad = 0
+            rtTime = 0
+            rtProfit = 0
             for n in range(0, len(rt.sequenceOfNodes) - 1):
                 A = rt.sequenceOfNodes[n]
                 B = rt.sequenceOfNodes[n + 1]
-                rtCost += self.timeMatrix[A.ID][B.ID]
-                rtLoad += A.service_time
-            # if abs(rtCost - rt.duration) > 0.0001:
-            #     print('Route Cost problem')
-            # if rtLoad != rt.rt_time:
-            #     print('Route Load problem')
-
-            totalSolCost += rt.duration
-
-        # if abs(totalSolCost - self.sol.rt_duration) > 0.0001:
-        #     print('Solution Cost problem')
+                rtTime += self.timeMatrix[A.ID][B.ID] + A.service_time
+                rtProfit += A.profit
+            if abs(rtTime - rt.rt_time) > 0.0001:
+                print('Route Time problem')
+            # if rtProfit != rt.rt_profit:
+            #     print('Route Profit problem')
 
     def ApplyCustomerInsertionAllPositions(self, insertion):
         insCustomer = insertion.customer
         rt = insertion.route
         insIndex = insertion.insertionPosition
         rt.sequenceOfNodes.insert(insIndex + 1, insCustomer)
-        # rt.rt_time += insertion.rt_duration
         rt.rt_time += insertion.rt_time
-        # self.sol.rt_duration += insertion.rt_duration
         self.sol.rt_duration += insertion.rt_time
         self.sol.rt_profit += insertion.rt_profit
         rt.rt_profit += insCustomer.profit
@@ -262,19 +239,21 @@ class Solver:
                 self.FindBestRelocationMove(rm)
                 if rm.originRoutePosition is not None:
                     if rm.moveCost < 0:
-                       self.ApplyRelocationMove(rm)
+                        self.ApplyRelocationMove(rm)
                     else:
-                        #self.iterations = localSearchIterator
                         terminationCondition = True
+                else:
+                    terminationCondition = True
             # Swaps
             elif operator == 1:
                 self.FindBestSwapMove(sm)
                 if sm.positionOfFirstRoute is not None:
                     if sm.moveCost < 0:
                         self.ApplySwapMove(sm)
-                        terminationCondition = True
                     else:
                         terminationCondition = True
+                else:
+                    terminationCondition = True
             elif operator == 2:
                 self.FindBestInsertionMove(ins)
                 if ins.originRoutePosition is not None:
@@ -288,11 +267,10 @@ class Solver:
                 else:
                     terminationCondition = True
             else:
-                print("wrong operator, try again with 0")
+                print("Wrong operator, try again with 0")
 
             self.TestSolution()
 
-            # if self.sol.rt_duration < self.bestSolution.duration:
             self.bestSolution = self.cloneSolution(self.sol)
             self.searchTrajectory.append(self.sol.rt_duration)
             localSearchIterator = localSearchIterator + 1
@@ -329,8 +307,7 @@ class Solver:
                     rt2: Route = self.sol.routes[targetRouteIndex]
                     for targetNodeIndex in range(0, len(rt2.sequenceOfNodes) - 1):
 
-                        if originRouteIndex == targetRouteIndex and (
-                                targetNodeIndex == originNodeIndex or targetNodeIndex == originNodeIndex - 1):
+                        if originRouteIndex == targetRouteIndex and (targetNodeIndex == originNodeIndex or targetNodeIndex == originNodeIndex - 1):
                             continue
 
                         A = rt1.sequenceOfNodes[originNodeIndex - 1]
@@ -344,7 +321,6 @@ class Solver:
                             if rt2.rt_time + B.service_time > 150:
                                 continue
 
-
                         costAdded = self.timeMatrix[A.ID][C.ID] + self.timeMatrix[F.ID][B.ID] + self.timeMatrix[B.ID][G.ID] + B.service_time
                         costRemoved = self.timeMatrix[A.ID][B.ID] + self.timeMatrix[B.ID][C.ID] + self.timeMatrix[F.ID][G.ID] - B.service_time
 
@@ -353,13 +329,10 @@ class Solver:
 
                         moveCost = costAdded - costRemoved
 
-                        if ((moveCost < rm.moveCost) and (rt2.rt_time + targetRtCostChange <=150)  and (rt1.rt_time + originRtCostChange <=150)):
-                            self.StoreBestRelocationMove(originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost, originRtCostChange,
-                                                         targetRtCostChange, rm)
+                        if ((moveCost < rm.moveCost) and (rt2.rt_time + targetRtCostChange <= 150)  and (rt1.rt_time + originRtCostChange <= 150)):
+                            self.StoreBestRelocationMove(originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost, originRtCostChange, targetRtCostChange, rm)
 
     def ApplyRelocationMove(self, rm: RelocationMove):
-
-        oldCost = self.CalculateTotalDuration(self.sol)
 
         originRt = self.sol.routes[rm.originRoutePosition]
         targetRt = self.sol.routes[rm.targetRoutePosition]
@@ -379,12 +352,8 @@ class Solver:
             targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
             originRt.rt_time += rm.costChangeOriginRt
             targetRt.rt_time += rm.costChangeTargetRt
-            # originRt.rt_time -= B.service_time
-            # targetRt.rt_time += B.service_time
 
         self.sol.rt_duration = self.CalculateTotalDuration(self.sol)
-
-        newCost = self.CalculateTotalDuration(self.sol)
 
     def InitializeOperators(self, rm):
         rm.Initialize()
@@ -427,7 +396,6 @@ class Solver:
                     if rt1 == rt2:
                         startOfSecondNodeIndex = firstNodeIndex + 1
                     for secondNodeIndex in range(startOfSecondNodeIndex, len(rt2.sequenceOfNodes) - 1):
-
                         a1 = rt1.sequenceOfNodes[firstNodeIndex - 1]
                         b1 = rt1.sequenceOfNodes[firstNodeIndex]
                         c1 = rt1.sequenceOfNodes[firstNodeIndex + 1]
@@ -435,7 +403,6 @@ class Solver:
                         a2 = rt2.sequenceOfNodes[secondNodeIndex - 1]
                         b2 = rt2.sequenceOfNodes[secondNodeIndex]
                         c2 = rt2.sequenceOfNodes[secondNodeIndex + 1]
-
 
                         costChangeFirstRoute = None
                         costChangeSecondRoute = None
@@ -448,7 +415,6 @@ class Solver:
                                 movecost1 = moveCost
                                 movecost2 = moveCost
                             else:
-
                                 costRemoved1 = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][c1.ID]
                                 costAdded1 = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][c1.ID]
                                 costRemoved2 = self.timeMatrix[a2.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
@@ -457,11 +423,6 @@ class Solver:
                                 movecost1 = moveCost
                                 movecost2 = moveCost
                         else:
-                            # if rt1.rt_time - b1.service_time + b2.service_time > 150:
-                            #     continue
-                            # if rt2.rt_time - b2.service_time + b1.service_time > 150:
-                            #     continue
-
                             costRemoved1 = self.timeMatrix[a1.ID][b1.ID] + self.timeMatrix[b1.ID][c1.ID]
                             costAdded1 = self.timeMatrix[a1.ID][b2.ID] + self.timeMatrix[b2.ID][c1.ID]
                             costRemoved2 = self.timeMatrix[a2.ID][b2.ID] + self.timeMatrix[b2.ID][c2.ID]
@@ -470,7 +431,7 @@ class Solver:
                             costChangeFirstRoute = costAdded1 - costRemoved1 - b1.service_time + b2.service_time
                             costChangeSecondRoute = costAdded2 - costRemoved2 - b2.service_time + b1.service_time
 
-                            movecost =  costAdded1 - costRemoved1 - b1.service_time + b2.service_time + costAdded2 - costRemoved2 - b2.service_time + b1.service_time
+                            moveCost = costAdded1 - costRemoved1 - b1.service_time + b2.service_time + costAdded2 - costRemoved2 - b2.service_time + b1.service_time
                             movecost1 = costAdded1 - costRemoved1 - b1.service_time + b2.service_time
                             movecost2 = costAdded2 - costRemoved2 - b2.service_time + b1.service_time
 
@@ -492,7 +453,6 @@ class Solver:
         else:
             rt1.rt_time += sm.costChangeFirstRt
             rt2.rt_time += sm.costChangeSecondRt
-
 
         self.sol.rt_duration = self.CalculateTotalDuration(self.sol)
         self.sol.rt_profit = self.CalculateTotalProfit(self.sol)
@@ -524,14 +484,12 @@ class Solver:
 
         for i in coveredNodes:
             for j in range(0, len(self.allNodes)):
-                #print(self.allNodes[j].ID)
                 if self.allNodes[j].ID in coveredNodes:
                     continue
                 else:
                     uncoveredNodes.append(self.allNodes[j])
 
         uncoveredNodes = list(dict.fromkeys(uncoveredNodes))
-
         return uncoveredNodes
 
     def FindBestInsertionMove(self, ins):
@@ -539,10 +497,8 @@ class Solver:
         ins.uncovered = uncovered
         for originRouteIndex in range(0, len(self.sol.routes)):
             rt1: Route = self.sol.routes[originRouteIndex]
-            # print('ROOUTEEE', originRouteIndex)
             for originNodeIndex in range(1, len(rt1.sequenceOfNodes) - 1):
                 for uncoveredNode in range(0, len(uncovered)):
-
                     A = rt1.sequenceOfNodes[originNodeIndex - 1]
                     B = rt1.sequenceOfNodes[originNodeIndex]
                     C = uncovered[uncoveredNode]
@@ -551,11 +507,6 @@ class Solver:
                     costRemoved = self.timeMatrix[A.ID][B.ID]
 
                     moveCost = costAdded - costRemoved
-                    # print('a-new', self.timeMatrix[A.ID][C.ID], end=' ')
-                    # print('new-b', self.timeMatrix[C.ID][B.ID], end=' ')
-                    # print('C service', C.service_time, end=' ')
-                    # print('costAdded', costAdded)
-                    #
 
                     if (rt1.rt_time + moveCost <= 150):
                         self.StoreBestInsertionMove(originRouteIndex, originNodeIndex,uncoveredNode, moveCost, ins)
@@ -576,7 +527,6 @@ class Solver:
 
         originRt.sequenceOfNodes.insert(ins.originNodePosition, C)
 
-
         originRt.rt_time += ins.moveCost
         originRt.rt_profit += C.profit
         C.isRouted = True
@@ -587,11 +537,8 @@ class Solver:
         uncoveredNodes = self.Uncovered()
         usm.uncoveredNodes = uncoveredNodes
         for firstRouteIndex in range(0, len(self.sol.routes)):
-
             rt1: Route = self.sol.routes[firstRouteIndex]
             for firstNodeIndex in range(1, len(rt1.sequenceOfNodes) - 1):
-                startOfSecondNodeIndex = 1
-
                 a1 = rt1.sequenceOfNodes[firstNodeIndex - 1]
                 b1 = rt1.sequenceOfNodes[firstNodeIndex]
                 c1 = rt1.sequenceOfNodes[firstNodeIndex + 1]
@@ -603,7 +550,6 @@ class Solver:
                     moveCost = costAdded - costRemoved
 
                     newprofit  = rt1.rt_profit + uncoveredNode.profit - b1.profit
-
 
                     if newprofit > rt1.rt_profit and moveCost + rt1.rt_time <= 150:
                         self.StoreBestUncoveredSwapMove(firstRouteIndex, firstNodeIndex, i, moveCost, newprofit, usm)
@@ -651,11 +597,9 @@ class Solver:
             self.InitializeOperators(sm)
             self.InitializeOperators(ins)
             self.InitializeOperators(usm)
-            if k == 1:
-
+            if k == 3:
                 self.FindBestRelocationMove(rm)
                 if rm.originRoutePosition is not None and rm.moveCost < 0:
-                    print("Doing Relocation")
                     self.ApplyRelocationMove(rm)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -664,11 +608,9 @@ class Solver:
                     k = 0
                 else:
                     k += 1
-            elif k == 0:
-
+            elif k == 2:
                 self.FindBestSwapMove(sm)
                 if sm.positionOfFirstRoute is not None and sm.moveCost < 0:
-                    print("Doing Swap")
                     self.ApplySwapMove(sm)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -677,11 +619,9 @@ class Solver:
                     k = 0
                 else:
                     k += 1
-            elif k == 3:
-
+            elif k == 1:
                 self.FindBestInsertionMove(ins)
                 if ins.originRoutePosition is not None:
-                    print("Doing Insertion")
                     self.ApplyInsertionMove(ins)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -690,11 +630,9 @@ class Solver:
                     k = 0
                 else:
                     k += 1
-            elif k == 2:
-
+            elif k == 0:
                 self.FindBestUncoveredSwapMove(usm)
                 if usm.positionOfFirstRoute is not None:
-                    print("Doing Uncovered Swap")
                     self.ApplyUncoveredSwapMove(usm)
                     if draw:
                         SolDrawer.draw(VNDIterator, self.sol, self.allNodes)
@@ -704,10 +642,8 @@ class Solver:
                 else:
                     k += 1
 
-            # if (self.sol.rt_profit < self.bestSolution.profit or self.sol.rt_duration < self.bestSolution.duration):
-            print("Solution",VNDIterator)
-            self.ReportSolution(self.sol)
             self.bestSolution = self.cloneSolution(self.sol)
 
+        print("Solution", VNDIterator)
         SolDrawer.draw('final_vnd', self.bestSolution, self.allNodes)
         SolDrawer.drawTrajectory(self.searchTrajectory)
