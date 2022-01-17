@@ -1,7 +1,5 @@
 import random
 import math
-import matplotlib.pyplot as plt
-
 
 class Model:
 
@@ -13,10 +11,8 @@ class Model:
         self.duration = -1
 
     def BuildModel(self):
-
-
         self.duration = 150
-        totalCustomers = 4
+        totalCustomers = 300
 
         d = Node(0, 50, 50, 0, 0)
         self.allNodes.append(d)
@@ -40,23 +36,6 @@ class Model:
                 b = self.allNodes[j]
                 dist = math.sqrt(math.pow(a.x - b.x, 2) + math.pow(a.y - b.y, 2))
                 self.time_matrix[i][j] = dist
-
-    def print_nodes(self):
-        for i in range(0, 300):
-            print('id :', self.allNodes[i].ID)
-            print('x :', self.allNodes[i].x)
-            print('y :', self.allNodes[i].y)
-            print('service_time :', self.allNodes[i].service_time)
-            print('profit :', self.allNodes[i].profit)
-
-    def print_time_matrix(self):
-        for i in range(0, len(self.allNodes)):
-            for j in range(0, len(self.allNodes)):
-                print('from ', i, 'to ', j, ' time : ', self.time_matrix[i][j])
-                print(i, 'profit = ', self.allNodes[i].profit, 'and service time = ',self.allNodes[i].service_time)
-                print(j, 'profit = ', self.allNodes[j].profit, 'and service time = ',self.allNodes[j].service_time)
-
-
 
 class Node:
     def __init__(self, idd, xx, yy, st, p):
