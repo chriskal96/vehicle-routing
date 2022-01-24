@@ -1,4 +1,4 @@
-from Model import *
+from model import *
 from SolutionDrawer import *
 
 class Solution:
@@ -117,8 +117,8 @@ class Solver:
         self.MinimumInsertions()
         self.ReportSolution(self.sol)
         SolDrawer.draw('MinIns', self.sol, self.allNodes)
-        self.LocalSearch(1)
-        #self.VND()
+        #self.LocalSearch(1)
+        self.VND()
         self.ReportSolution(self.sol)
         return self.sol
 
@@ -186,9 +186,9 @@ class Solver:
             rt = sol.routes[i]
             for j in range(0, len(rt.sequenceOfNodes)):
                 print(rt.sequenceOfNodes[j].ID, end=' ')
-            print(rt.rt_time)
-        print(self.sol.rt_duration)
-        print(self.sol.rt_profit)
+            print("| Route Duration:", rt.rt_time, " | Route Profit:", rt.rt_profit)
+        print("Total Duration:", self.sol.rt_duration)
+        print("Total Profit:", self.sol.rt_profit)
 
     def TestSolution(self):
         for r in range(0, len(self.sol.routes)):
@@ -202,8 +202,6 @@ class Solver:
                 rtProfit += A.profit
             if abs(rtTime - rt.rt_time) > 0.0001:
                 print('Route Time problem')
-            # if rtProfit != rt.rt_profit:
-            #     print('Route Profit problem')
 
     def ApplyCustomerInsertionAllPositions(self, insertion):
         insCustomer = insertion.customer
@@ -644,6 +642,8 @@ class Solver:
 
             self.bestSolution = self.cloneSolution(self.sol)
 
-        print("Solution", VNDIterator)
+        print()
+        print("Total Iterations:", VNDIterator)
+        print()
         SolDrawer.draw('final_vnd', self.bestSolution, self.allNodes)
         SolDrawer.drawTrajectory(self.searchTrajectory)
