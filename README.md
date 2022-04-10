@@ -1,6 +1,6 @@
-# Exploring Scotch Whiskies
+# Vehicle Routing Problem
 
-This repository includes an assignment assigned for the cource "Analytics Practicum 1" offered by the Master of Science in Business Analytics of the Athens University of Economics and Business. 
+This repository includes an assignment assigned for the cource "Large Scale Optimization" offered by the Master of Science in Business Analytics of the Athens University of Economics and Business. 
 
 ## Problem
 
